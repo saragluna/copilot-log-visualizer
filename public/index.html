@@ -819,7 +819,12 @@
     <p class="or-divider">— OR —</p>
     <div class="file-path-input">
       <label for="filePathInput">File path (relative or absolute):</label>
-      <input type="text" id="filePathInput" placeholder="out.jsonl" value="out.jsonl">
+      <input type="text" id="filePathInput" placeholder="out.jsonl" value="out.jsonl" 
+             aria-label="Log file path" 
+             aria-describedby="filePathHelp">
+      <small id="filePathHelp" style="font-size: 11px; color: #586069; display: block; margin-top: 4px;">
+        Examples: out.jsonl, logs/out.jsonl, /path/to/out.jsonl
+      </small>
     </div>
     <button class="stream-btn" id="initialStreamBtn">🔴 Start Live Streaming</button>
   </div>

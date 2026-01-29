@@ -26,13 +26,20 @@ export class AppController {
     // Default to out.jsonl if no file specified
     const filePath = file || 'out.jsonl';
     
-    // Basic validation: file must end with .jsonl and not contain path traversal
-    if (!filePath.endsWith('.jsonl')) {
-      throw new Error('Invalid file type. Only .jsonl files are allowed.');
+    // First validate for path traversal and malicious characters
+    if (filePath.includes('..') || filePath.includes('\0') || filePath.includes('\\')) {
+      throw new Error('Invalid file path. Path traversal is not allowed.');
     }
     
-    if (filePath.includes('..') || filePath.includes('\0')) {
+    // Check for URL-encoded path traversal attempts
+    const decoded = decodeURIComponent(filePath);
+    if (decoded.includes('..') || decoded.includes('\0') || decoded.includes('\\')) {
       throw new Error('Invalid file path. Path traversal is not allowed.');
+    }
+    
+    // Then validate file extension
+    if (!filePath.endsWith('.jsonl')) {
+      throw new Error('Invalid file type. Only .jsonl files are allowed.');
     }
     
     return this.streamService.watchFile(filePath);

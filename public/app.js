@@ -53,6 +53,17 @@ function startStreaming() {
     return;
   }
   
+  // Basic client-side validation
+  if (!filePath.endsWith('.jsonl')) {
+    alert('File path must end with .jsonl');
+    return;
+  }
+  
+  if (filePath.includes('..') || filePath.includes('\0')) {
+    alert('Invalid file path. Path traversal is not allowed.');
+    return;
+  }
+  
   isStreaming = true;
   eventSource = new EventSource(`/stream?file=${encodeURIComponent(filePath)}`);
   
@@ -139,7 +150,7 @@ initialStreamBtn.addEventListener('click', (e) => {
 
 dropZone.addEventListener('click', (e) => {
   // Don't trigger file input if clicking on the path input or stream button
-  if (e.target.id === 'filePathInput' || e.target.id === 'initialStreamBtn') {
+  if (e.target.closest('#filePathInput') || e.target.closest('#initialStreamBtn')) {
     return;
   }
   fileInput.click();
