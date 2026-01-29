@@ -1,11 +1,12 @@
 # Copilot Log Visualizer
 
-A web application built with NestJS to visualize GitHub Copilot CLI request/response logs from `.jsonl` files. Features a Chrome DevTools-like interface with intelligent parsing of OpenAI chat completion requests and responses.
+A web application built with NestJS to visualize GitHub Copilot CLI request/response logs from `.jsonl` files. Features a Chrome DevTools-like interface with intelligent parsing of OpenAI chat completion requests and responses, plus **live streaming** capability to watch requests in real-time.
 
 ## ✨ Features
 
 ### Core Functionality
 - 📁 **Drag & Drop Interface** - Simply drop your `.jsonl` log file onto the page
+- 🔴 **Live Streaming** - Watch requests appear in real-time as they're captured by mitmproxy
 - 📊 **Chrome DevTools-like UI** - Familiar interface with request list and detail panels
 - 🔄 **Streaming Response Merging** - Automatically merges chunked/streaming responses
 - 💾 **Large File Support** - Handles log files up to 50MB
@@ -39,7 +40,8 @@ copilot-log-visualizer/
 │   ├── main.ts           # Application entry point
 │   ├── app.module.ts     # Main application module
 │   ├── app.controller.ts # HTTP request controller
-│   └── log.service.ts    # Log parsing logic
+│   ├── log.service.ts    # Log parsing logic
+│   └── stream.service.ts # Live streaming service
 ├── public/
 │   ├── index.html        # Main HTML page
 │   └── app.js            # Frontend JavaScript
@@ -90,7 +92,23 @@ http://localhost:3001
 
 To capture logs from GitHub Copilot CLI, see [mitm/README.md](mitm/README.md) for detailed setup instructions.
 
-### Basic Usage
+### Live Streaming Mode (Real-time)
+
+**New!** Watch requests appear in real-time as they're captured:
+
+1. **Start the visualizer**: Run `npm run build && npm start` and open http://localhost:3001
+2. **Start mitmproxy**: In another terminal, run the proxy (see [mitm/README.md](mitm/README.md))
+3. **Click "Start Live Streaming"**: On the main page, click the green button to begin
+4. **Run Copilot CLI**: Use the proxied copilot wrapper to run commands
+5. **Watch in Real-time**: Requests appear instantly as they're captured
+6. **Stop when done**: Click "Stop Live Stream" to pause
+
+The live streaming mode watches the `out.jsonl` file and automatically displays new requests as they're appended. This is perfect for:
+- Debugging Copilot CLI interactions in real-time
+- Monitoring token usage during development
+- Understanding request/response patterns as they happen
+
+### File Upload Mode (Historical)
 
 1. **Upload Log File**: Drag and drop your `.jsonl` log file onto the page, or click to browse
 2. **Browse Requests**: All HTTP requests appear in the left sidebar with method, status, and timing
@@ -132,12 +150,14 @@ The captured log file is then loaded into this visualizer for analysis. See [mit
 ### Backend (NestJS)
 
 - **LogService**: Parses `.jsonl` files, aggregates chunked responses, and handles Server-Sent Events (SSE)
-- **AppController**: Provides endpoints for serving the UI and parsing log files
+- **StreamService**: Watches `out.jsonl` file for changes and streams new requests via SSE
+- **AppController**: Provides endpoints for serving the UI, parsing log files, and streaming
 - **JSON Parsing**: Automatically detects and parses JSON in request/response bodies
 
 ### Frontend
 
 - **Drag & Drop**: File upload with drag-and-drop support
+- **Live Streaming**: EventSource-based real-time updates via Server-Sent Events
 - **Request List**: Displays all parsed requests with method, status, URL, and timing
 - **Detail View**: Shows complete request/response information including headers and body
 - **Responsive**: Clean, modern interface inspired by Chrome DevTools
@@ -146,6 +166,7 @@ The captured log file is then loaded into this visualizer for analysis. See [mit
 
 - `GET /` - Serves the main HTML page
 - `POST /parse` - Accepts log content and returns parsed requests
+- `GET /stream?file=out.jsonl` - Server-Sent Events endpoint for live streaming
 
 ## Log Format
 
