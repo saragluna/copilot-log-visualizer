@@ -33,14 +33,9 @@ export class StreamService {
     // Watch for file changes
     const watcher = chokidar.watch(absolutePath, {
       persistent: true,
-      ignoreInitial: false,
+      ignoreInitial: true, // Don't emit add event for existing files
       usePolling: true,
       interval: 100,
-    });
-
-    watcher.on('add', () => {
-      // File created, read from beginning
-      this.readNewLines(absolutePath, subject);
     });
 
     watcher.on('change', () => {
@@ -70,7 +65,7 @@ export class StreamService {
 
       const stream = fs.createReadStream(filePath, {
         start: currentPosition,
-        end: stats.size,
+        end: stats.size - 1, // end is inclusive
         encoding: 'utf8',
       });
 
@@ -105,6 +100,7 @@ export class StreamService {
 
       stream.on('error', (error) => {
         console.error('Error reading file:', error);
+        subject.error(error);
       });
     } catch (error) {
       console.error('Error reading new lines:', error);

@@ -93,6 +93,8 @@ function startStreaming() {
     console.error('EventSource error:', error);
     streamStatus.querySelector('.indicator').classList.remove('active');
     streamStatus.querySelector('.text').textContent = 'Connection error';
+    // Stop streaming on error
+    stopStreaming();
   };
 }
 
@@ -158,6 +160,13 @@ headerFileInput.addEventListener('change', (e) => {
   }
 });
 
+// Cleanup on page unload
+window.addEventListener('beforeunload', () => {
+  if (isStreaming) {
+    stopStreaming();
+  }
+});
+
 dropZone.addEventListener('dragover', (e) => {
   e.preventDefault();
   dropZone.classList.add('dragover');
@@ -189,10 +198,13 @@ async function handleFile(file) {
     return;
   }
 
-  // Stop streaming if active
+  // Stop streaming if active and clear requests
   if (isStreaming) {
     stopStreaming();
   }
+  
+  // Clear existing requests when uploading a new file
+  requests = [];
 
   const content = await file.text();
   
