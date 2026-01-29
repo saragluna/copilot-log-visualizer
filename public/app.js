@@ -1,6 +1,8 @@
 let requests = [];
 let selectedRequest = null;
 let selectedPaths = new Set(); // Track selected filter paths
+let eventSource = null; // EventSource for SSE streaming
+let isStreaming = false;
 
 // Load saved filter selections from localStorage
 function loadFilterSelections() {
@@ -35,6 +37,95 @@ const responsePanel = document.getElementById('response-panel');
 const headerUpload = document.getElementById('headerUpload');
 const headerDropZone = document.getElementById('headerDropZone');
 const headerFileInput = document.getElementById('headerFileInput');
+const streamToggle = document.getElementById('streamToggle');
+const streamStatus = document.getElementById('streamStatus');
+const initialStreamBtn = document.getElementById('initialStreamBtn');
+
+// Streaming functions
+function startStreaming() {
+  if (isStreaming) return;
+  
+  isStreaming = true;
+  eventSource = new EventSource('/stream?file=out.jsonl');
+  
+  // Show the container and hide drop zone
+  dropZone.classList.add('hidden');
+  container.classList.add('visible');
+  headerUpload.classList.add('visible');
+  
+  // Update UI
+  streamToggle.textContent = 'Stop Live Stream';
+  streamToggle.classList.add('active');
+  streamStatus.style.display = 'flex';
+  streamStatus.querySelector('.indicator').classList.add('active');
+  streamStatus.querySelector('.text').textContent = 'Streaming...';
+  
+  // Clear existing requests if starting fresh
+  if (requests.length === 0) {
+    sidebar.innerHTML = '<div class="empty-state">Waiting for requests...</div>';
+  }
+  
+  eventSource.onmessage = (event) => {
+    try {
+      const newRequest = JSON.parse(event.data);
+      
+      // Check if request already exists
+      const existingIndex = requests.findIndex(r => r.id === newRequest.id);
+      if (existingIndex >= 0) {
+        requests[existingIndex] = newRequest;
+      } else {
+        requests.push(newRequest);
+      }
+      
+      renderRequestList();
+      
+      // Auto-scroll to show new request
+      const requestItems = sidebar.querySelectorAll('.request-item');
+      if (requestItems.length > 0) {
+        requestItems[requestItems.length - 1].scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      }
+    } catch (error) {
+      console.error('Error processing streamed request:', error);
+    }
+  };
+  
+  eventSource.onerror = (error) => {
+    console.error('EventSource error:', error);
+    streamStatus.querySelector('.indicator').classList.remove('active');
+    streamStatus.querySelector('.text').textContent = 'Connection error';
+  };
+}
+
+function stopStreaming() {
+  if (!isStreaming) return;
+  
+  isStreaming = false;
+  
+  if (eventSource) {
+    eventSource.close();
+    eventSource = null;
+  }
+  
+  // Update UI
+  streamToggle.textContent = 'Start Live Stream';
+  streamToggle.classList.remove('active');
+  streamStatus.querySelector('.indicator').classList.remove('active');
+  streamStatus.querySelector('.text').textContent = 'Stopped';
+}
+
+// Event listeners for streaming
+streamToggle.addEventListener('click', () => {
+  if (isStreaming) {
+    stopStreaming();
+  } else {
+    startStreaming();
+  }
+});
+
+initialStreamBtn.addEventListener('click', (e) => {
+  e.stopPropagation(); // Prevent the drop zone click handler
+  startStreaming();
+});
 
 dropZone.addEventListener('click', () => fileInput.click());
 
@@ -96,6 +187,11 @@ async function handleFile(file) {
   if (!file.name.endsWith('.jsonl')) {
     alert('Please select a .jsonl file');
     return;
+  }
+
+  // Stop streaming if active
+  if (isStreaming) {
+    stopStreaming();
   }
 
   const content = await file.text();
