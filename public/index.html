@@ -43,6 +43,61 @@
       display: flex;
     }
 
+    .stream-controls {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .stream-toggle {
+      background: #238636;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      padding: 8px 16px;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 500;
+      transition: all 0.3s;
+    }
+
+    .stream-toggle:hover {
+      background: #2ea043;
+    }
+
+    .stream-toggle.active {
+      background: #da3633;
+    }
+
+    .stream-toggle.active:hover {
+      background: #e5534b;
+    }
+
+    .stream-status {
+      font-size: 14px;
+      color: #d1d5da;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .stream-status .indicator {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #6a737d;
+    }
+
+    .stream-status .indicator.active {
+      background: #238636;
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.5; }
+    }
+
     .header-drop-zone {
       border: 2px dashed #6a737d;
       border-radius: 6px;
@@ -109,6 +164,59 @@
     .drop-zone .hint {
       color: #959da5;
       font-size: 14px;
+    }
+
+    .drop-zone .or-divider {
+      margin: 20px 0;
+      color: #959da5;
+      font-size: 14px;
+      font-weight: 500;
+    }
+
+    .drop-zone .stream-btn {
+      margin-top: 20px;
+      background: #238636;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      padding: 12px 24px;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 500;
+      transition: all 0.3s;
+    }
+
+    .drop-zone .stream-btn:hover {
+      background: #2ea043;
+    }
+
+    .file-path-input {
+      margin-top: 15px;
+      width: 100%;
+      max-width: 400px;
+    }
+
+    .file-path-input label {
+      display: block;
+      font-size: 12px;
+      color: #586069;
+      margin-bottom: 5px;
+      text-align: left;
+    }
+
+    .file-path-input input {
+      width: 100%;
+      padding: 8px 12px;
+      border: 1px solid #d1d5da;
+      border-radius: 6px;
+      font-size: 14px;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+    }
+
+    .file-path-input input:focus {
+      outline: none;
+      border-color: #0366d6;
+      box-shadow: 0 0 0 3px rgba(3, 102, 214, 0.1);
     }
 
     .container {
@@ -690,6 +798,13 @@
   <div class="header">
     <h1>Copilot Log Visualizer</h1>
     <div class="header-upload" id="headerUpload">
+      <div class="stream-controls">
+        <button class="stream-toggle" id="streamToggle">Start Live Stream</button>
+        <div class="stream-status" id="streamStatus" style="display: none;">
+          <span class="indicator"></span>
+          <span class="text">Disconnected</span>
+        </div>
+      </div>
       <div class="header-drop-zone" id="headerDropZone">
         <p>📁 Drag & drop or click to upload another log</p>
       </div>
@@ -701,6 +816,17 @@
     <p>📁 Drag and drop your .jsonl file here</p>
     <p class="hint">or click to browse</p>
     <input type="file" id="fileInput" accept=".jsonl" style="display: none;">
+    <p class="or-divider">— OR —</p>
+    <div class="file-path-input">
+      <label for="filePathInput">File path (relative or absolute):</label>
+      <input type="text" id="filePathInput" placeholder="out.jsonl" value="out.jsonl" 
+             aria-label="Log file path" 
+             aria-describedby="filePathHelp">
+      <small id="filePathHelp" style="font-size: 11px; color: #586069; display: block; margin-top: 4px;">
+        Examples: out.jsonl, logs/out.jsonl, /path/to/out.jsonl
+      </small>
+    </div>
+    <button class="stream-btn" id="initialStreamBtn">🔴 Start Live Streaming</button>
   </div>
 
   <div class="container" id="container">

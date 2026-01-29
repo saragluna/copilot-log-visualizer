@@ -1,6 +1,8 @@
 let requests = [];
 let selectedRequest = null;
 let selectedPaths = new Set(); // Track selected filter paths
+let eventSource = null; // EventSource for SSE streaming
+let isStreaming = false;
 
 // Load saved filter selections from localStorage
 function loadFilterSelections() {
@@ -35,8 +37,131 @@ const responsePanel = document.getElementById('response-panel');
 const headerUpload = document.getElementById('headerUpload');
 const headerDropZone = document.getElementById('headerDropZone');
 const headerFileInput = document.getElementById('headerFileInput');
+const streamToggle = document.getElementById('streamToggle');
+const streamStatus = document.getElementById('streamStatus');
+const initialStreamBtn = document.getElementById('initialStreamBtn');
+const filePathInput = document.getElementById('filePathInput');
 
-dropZone.addEventListener('click', () => fileInput.click());
+// Streaming functions
+function startStreaming() {
+  if (isStreaming) return;
+  
+  // Get the file path from the input
+  const filePath = filePathInput ? filePathInput.value.trim() : 'out.jsonl';
+  if (!filePath) {
+    alert('Please enter a file path');
+    return;
+  }
+  
+  // Basic client-side validation
+  if (!filePath.endsWith('.jsonl')) {
+    alert('File path must end with .jsonl');
+    return;
+  }
+  
+  if (filePath.includes('..') || filePath.includes('\0')) {
+    alert('Invalid file path. Path traversal is not allowed.');
+    return;
+  }
+  
+  isStreaming = true;
+  eventSource = new EventSource(`/stream?file=${encodeURIComponent(filePath)}`);
+  
+  // Show the container and hide drop zone
+  dropZone.classList.add('hidden');
+  container.classList.add('visible');
+  headerUpload.classList.add('visible');
+  
+  // Update UI
+  streamToggle.textContent = 'Stop Live Stream';
+  streamToggle.classList.add('active');
+  streamStatus.style.display = 'flex';
+  streamStatus.querySelector('.indicator').classList.add('active');
+  streamStatus.querySelector('.text').textContent = 'Streaming...';
+  
+  // Clear existing requests if starting fresh
+  if (requests.length === 0) {
+    sidebar.innerHTML = '<div class="empty-state">Waiting for requests...</div>';
+  }
+  
+  eventSource.onmessage = (event) => {
+    try {
+      const newRequest = JSON.parse(event.data);
+      
+      // Check if request already exists
+      const existingIndex = requests.findIndex(r => r.id === newRequest.id);
+      if (existingIndex >= 0) {
+        requests[existingIndex] = newRequest;
+      } else {
+        requests.push(newRequest);
+      }
+      
+      renderRequestList();
+      
+      // Auto-scroll to show new request
+      const requestItems = sidebar.querySelectorAll('.request-item');
+      if (requestItems.length > 0) {
+        requestItems[requestItems.length - 1].scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      }
+    } catch (error) {
+      console.error('Error processing streamed request:', error);
+    }
+  };
+  
+  eventSource.onerror = (error) => {
+    console.error('EventSource error:', error);
+    streamStatus.querySelector('.indicator').classList.remove('active');
+    streamStatus.querySelector('.text').textContent = 'Connection error';
+    // Stop streaming on error
+    stopStreaming();
+  };
+}
+
+function stopStreaming() {
+  if (!isStreaming) return;
+  
+  isStreaming = false;
+  
+  if (eventSource) {
+    eventSource.close();
+    eventSource = null;
+  }
+  
+  // Update UI
+  streamToggle.textContent = 'Start Live Stream';
+  streamToggle.classList.remove('active');
+  streamStatus.querySelector('.indicator').classList.remove('active');
+  streamStatus.querySelector('.text').textContent = 'Stopped';
+}
+
+// Event listeners for streaming
+streamToggle.addEventListener('click', () => {
+  if (isStreaming) {
+    stopStreaming();
+  } else {
+    startStreaming();
+  }
+});
+
+initialStreamBtn.addEventListener('click', (e) => {
+  e.stopPropagation(); // Prevent the drop zone click handler
+  startStreaming();
+});
+
+dropZone.addEventListener('click', (e) => {
+  // Don't trigger file input if clicking on the path input or stream button
+  if (e.target.closest('#filePathInput') || e.target.closest('#initialStreamBtn')) {
+    return;
+  }
+  fileInput.click();
+});
+
+// Prevent drop zone click when interacting with file path input
+if (filePathInput) {
+  filePathInput.addEventListener('click', (e) => {
+    e.stopPropagation();
+  });
+}
 
 // Header upload - click to browse
 headerDropZone.addEventListener('click', () => headerFileInput.click());
@@ -64,6 +189,13 @@ headerFileInput.addEventListener('change', (e) => {
   const file = e.target.files[0];
   if (file) {
     handleFile(file);
+  }
+});
+
+// Cleanup on page unload
+window.addEventListener('beforeunload', () => {
+  if (isStreaming) {
+    stopStreaming();
   }
 });
 
@@ -97,6 +229,14 @@ async function handleFile(file) {
     alert('Please select a .jsonl file');
     return;
   }
+
+  // Stop streaming if active and clear requests
+  if (isStreaming) {
+    stopStreaming();
+  }
+  
+  // Clear existing requests when uploading a new file
+  requests = [];
 
   const content = await file.text();
   
