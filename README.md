@@ -98,12 +98,16 @@ To capture logs from GitHub Copilot CLI, see [mitm/README.md](mitm/README.md) fo
 
 1. **Start the visualizer**: Run `npm run build && npm start` and open http://localhost:3001
 2. **Start mitmproxy**: In another terminal, run the proxy (see [mitm/README.md](mitm/README.md))
-3. **Click "Start Live Streaming"**: On the main page, click the green button to begin
-4. **Run Copilot CLI**: Use the proxied copilot wrapper to run commands
-5. **Watch in Real-time**: Requests appear instantly as they're captured
-6. **Stop when done**: Click "Stop Live Stream" to pause
+3. **Specify the log file path**: 
+   - Default: `out.jsonl` (in the current working directory)
+   - Relative path: e.g., `logs/out.jsonl`
+   - Absolute path: e.g., `/path/to/your/out.jsonl`
+4. **Click "Start Live Streaming"**: On the main page, click the green button to begin
+5. **Run Copilot CLI**: Use the proxied copilot wrapper to run commands
+6. **Watch in Real-time**: Requests appear instantly as they're captured
+7. **Stop when done**: Click "Stop Live Stream" to pause
 
-The live streaming mode watches the `out.jsonl` file and automatically displays new requests as they're appended. This is perfect for:
+The live streaming mode watches the specified `.jsonl` file and automatically displays new requests as they're appended. This is perfect for:
 - Debugging Copilot CLI interactions in real-time
 - Monitoring token usage during development
 - Understanding request/response patterns as they happen

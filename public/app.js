@@ -40,13 +40,21 @@ const headerFileInput = document.getElementById('headerFileInput');
 const streamToggle = document.getElementById('streamToggle');
 const streamStatus = document.getElementById('streamStatus');
 const initialStreamBtn = document.getElementById('initialStreamBtn');
+const filePathInput = document.getElementById('filePathInput');
 
 // Streaming functions
 function startStreaming() {
   if (isStreaming) return;
   
+  // Get the file path from the input
+  const filePath = filePathInput ? filePathInput.value.trim() : 'out.jsonl';
+  if (!filePath) {
+    alert('Please enter a file path');
+    return;
+  }
+  
   isStreaming = true;
-  eventSource = new EventSource('/stream?file=out.jsonl');
+  eventSource = new EventSource(`/stream?file=${encodeURIComponent(filePath)}`);
   
   // Show the container and hide drop zone
   dropZone.classList.add('hidden');
@@ -129,7 +137,20 @@ initialStreamBtn.addEventListener('click', (e) => {
   startStreaming();
 });
 
-dropZone.addEventListener('click', () => fileInput.click());
+dropZone.addEventListener('click', (e) => {
+  // Don't trigger file input if clicking on the path input or stream button
+  if (e.target.id === 'filePathInput' || e.target.id === 'initialStreamBtn') {
+    return;
+  }
+  fileInput.click();
+});
+
+// Prevent drop zone click when interacting with file path input
+if (filePathInput) {
+  filePathInput.addEventListener('click', (e) => {
+    e.stopPropagation();
+  });
+}
 
 // Header upload - click to browse
 headerDropZone.addEventListener('click', () => headerFileInput.click());

@@ -23,15 +23,18 @@ export class AppController {
 
   @Sse('/stream')
   streamLogs(@Query('file') file?: string): Observable<MessageEvent> {
-    // Validate and sanitize the file parameter to prevent path traversal
-    const allowedFiles = ['out.jsonl'];
-    const fileName = file || 'out.jsonl';
+    // Default to out.jsonl if no file specified
+    const filePath = file || 'out.jsonl';
     
-    // Check if the file is in the allowed list
-    if (!allowedFiles.includes(fileName)) {
-      throw new Error('Invalid file name. Only out.jsonl is allowed.');
+    // Basic validation: file must end with .jsonl and not contain path traversal
+    if (!filePath.endsWith('.jsonl')) {
+      throw new Error('Invalid file type. Only .jsonl files are allowed.');
     }
     
-    return this.streamService.watchFile(fileName);
+    if (filePath.includes('..') || filePath.includes('\0')) {
+      throw new Error('Invalid file path. Path traversal is not allowed.');
+    }
+    
+    return this.streamService.watchFile(filePath);
   }
 }
